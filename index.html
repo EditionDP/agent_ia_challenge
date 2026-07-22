@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Corporativo Multi-Usuario</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background:url(/bimbam.png); margin: 0; padding: 20px; display: flex; justify-content: center; }
+        #chat-container { width: 100%; max-width: 600px; background: url(/bimbam.png); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden; display: flex; flex-direction: column; height: 80vh; }
+        #header { background: #0f172a; color: white; padding: 15px; text-align: center; font-size: 1.1em; font-weight: 600; }
+        #historial { flex: 1; padding: 20px; overflow-y: auto; display:grid; flex-direction:column; gap: 12px; background: url('bimbam.png'); background-repeat: no-repeat;
+        background-size: 34% 86%;background-attachment: fixed;background-position: center; }
+        .burbuja { max-width: 75%; padding: 10px 14px; border-radius: 8px; font-size: 0.95em; line-height: 1.4; }
+        .user { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 1px; }
+        .ai { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 1px; }
+        #input-area { display: flex; padding: 15px; border-top: 1px solid #e2e8f0; background: white; gap: 10px; }
+        #input-area input { flex: 1; padding: 12px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
+        #input-area button { background: #2563eb; color: white; border: none; padding: 0 18px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        #input-area button:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="header">Asistente Inteligente PDF</div>
+    <div id="historial"></div>
+    <div id="input-area">
+        <input type="text" id="mensaje-input" placeholder="Pregúntame sobre el manual..." onkeypress="if(event.key === 'Enter') enviarMensaje()">
+        <button onclick="enviarMensaje()">Enviar</button>
+    </div>
+</div>
+
+<script>
+    const API_URL = 'agentiachallenge-production.up.railway.app'; // Cambia esto por tu dominio en la nube
+
+    // Generar o recuperar una sesión única para este navegador/usuario
+    if (!localStorage.getItem('chat_usuario_id')) {
+        localStorage.setItem('chat_usuario_id', 'usr_' + Math.random().toString(36).substring(2, 15));
+    }
+    const usuarioId = localStorage.getItem('chat_usuario_id');
+
+    async function enviarMensaje() {
+        const input = document.getElementById('mensaje-input');
+        const historial = document.getElementById('historial');
+        const texto = input.value.trim();
+
+        if (!texto) return;
+
+        // Añadir mensaje del usuario a la pantalla
+        historial.innerHTML += `<div class="burbuja user">${texto}</div>`;
+        input.value = '';
+        historial.scrollTop = historial.scrollHeight;
+
+        // Añadir burbuja de estado de carga
+        const loadId = 'load-' + Date.now();
+        historial.innerHTML += `<div class="burbuja ai" id="${loadId}"><i>Analizando PDFs...</i></div>`;
+        historial.scrollTop = historial.scrollHeight;
+
+        try {
+            // Enviamos el mensaje junto con el ID único del usuario
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    mensaje: texto,
+                    usuario_id: usuarioId 
+                })
+            });
+
+            const data = await response.json();
+            const loadBubble = document.getElementById(loadId);
+
+            if (data.respuesta) {
+                loadBubble.innerHTML = data.respuesta;
+            } else {
+                loadBubble.innerHTML = `⚠️ Error al procesar tu solicitud.`;
+            }
+        } catch (error) {
+            document.getElementById(loadId).innerHTML = `❌ Error: No hay conexión con el agente.`;
+        }
+        historial.scrollTop = historial.scrollHeight;
+    }
+</script>
+</body>
+</html>

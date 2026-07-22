@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+
+.env
+
+.ipynb_checkpoints/
+
+venv/
+
+.venv/
+
+.idea/
+
+.vscode/
+
+*.log
